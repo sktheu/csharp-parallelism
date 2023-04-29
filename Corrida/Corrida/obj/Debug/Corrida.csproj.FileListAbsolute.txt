@@ -1,0 +1,7 @@
+C:\Users\Matheus\source\repos\Corrida\Corrida\bin\Debug\Corrida.exe.config
+C:\Users\Matheus\source\repos\Corrida\Corrida\bin\Debug\Corrida.exe
+C:\Users\Matheus\source\repos\Corrida\Corrida\bin\Debug\Corrida.pdb
+C:\Users\Matheus\source\repos\Corrida\Corrida\obj\Debug\Corrida.csproj.AssemblyReference.cache
+C:\Users\Matheus\source\repos\Corrida\Corrida\obj\Debug\Corrida.csproj.CoreCompileInputs.cache
+C:\Users\Matheus\source\repos\Corrida\Corrida\obj\Debug\Corrida.exe
+C:\Users\Matheus\source\repos\Corrida\Corrida\obj\Debug\Corrida.pdb
