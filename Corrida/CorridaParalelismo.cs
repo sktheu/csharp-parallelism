@@ -3,49 +3,50 @@ using System.Threading;
 
 /* Grupo 404 - SMAUG:
   Caike Grion dos Santos
-  Jo„o Pedro Queiroz de Melo
-  Jo„o Vitor dos Reis Domingues
+  Jo√£o Pedro Queiroz de Melo
+  Jo√£o Vitor dos Reis Domingues
   Lucas Neves Timar
   Lucas Proetti Quadros
   Matheus Santos Duca
 */
 
 #region Classe Main
-// Classe principal que contÈm o mÈtodo Main
+// Classe principal que cont√©m o m√©todo Main
 public class Program
 {
 
-    // MÈtodo de entrada do programa
+    // M√©todo de entrada do programa
     private static void Main(string[] args)
     {
         // Inicie o jogo
         Jogo.Rodar();
     }
 }
-#endregion Fim Classe Principal
+#endregion Fim Classe Main
 
 #region Classe Jogo
 
 public class Jogo
 {
-    private static readonly object lockObj = new object(); // Objeto de sincronizaÁ„o
-    private static bool[] resultados; // Array para armazenar os resultados da detecÁ„o de colis„o
+    private static readonly object lockObj = new object(); // Objeto de sincroniza√ß√£o
+    private static bool[] resultados; // Array para armazenar os resultados da detec√ß√£o de colis√£o
     private static char[] batidos; // Array para armazenar quem sofreu a batida
 
-    private static Carro[] carros; // Matriz que ir· armazenar os carros do jogo
+    private static int quantThreadsCM; // Armazena o resultado do c√°lculo da quantidade de elementos dos arrays de Threads de Colis√£o e Movimenta√ß√£o
+    private static int quantThreadsL; // Armazena o resultado do c√°lculo da quantidade de elementos do array de Threads para Lidar com as Colis√µes
 
-    private static bool jogando = true; // condiÁ„o para continuar rodando o gameloop
+    private static Carro[] carros; // Matriz que ir√° armazenar os carros do jogo
 
     // Array feito com o o intuito de especificar cada piloto na corrida, atribuindo um dos caracteres abaixo
     private static char[] idPilotos = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X' };
 
-    // Ordem: ConversÌveis, Off-Road, FÛrmula 1
+    // Ordem: Convers√≠veis, Off-Road, F√≥rmula 1
     private static int[] larguras = { 6, 10, 4 };
     private static int[] alturas = { 8, 12, 6 };
     private static int[] velocidades = { 10, 5, 20 };
     private static int[] derrapagens = { 50, 75, 25 };
 
-    private static string[] titulos = { "Parallel Race - ConversÌveis Edition", " Parallel Race - Off-Road Edition   ", "    Parallel Race - F1 Edition      " };
+    private static string[] titulos = { "Parallel Race - Convers√≠veis Edition", " Parallel Race - Off-Road Edition   ", "    Parallel Race - F1 Edition      " };
     private static string tituloCorridaAtual;
 
     // Largura da Pista
@@ -56,14 +57,14 @@ public class Jogo
     private static int tempoMaximo;
     private static int tempoAtual;
 
-    // MÈtodo principal do jogo
+    // M√©todo principal do jogo
     public static void Rodar()
     {
-        // ConfiguraÁıes iniciais
+        // Configura√ß√µes iniciais
         ConfigurarCorrida();
 
         // Game Loop
-        do
+        while (true)
         {
             Console.Clear();
             Console.WriteLine("---------------------------------------");
@@ -82,100 +83,93 @@ public class Jogo
                 string input = Console.ReadLine().ToUpper();
                 while (input != "S" && input != "N")
                 {
-                    Console.WriteLine("OpÁ„o Inv·lida!");
+                    Console.WriteLine("Op√ß√£o Inv√°lida!");
 
                     input = Console.ReadLine().ToUpper();
                 }
 
-                if (input == "N") // Encerre o Game Loop e quebre-o
+                if (input == "N") // Encerre o Game Loop
                 {
-                    jogando = false;
                     break;
                 }
 
-                ConfigurarCorrida(); // V· novamente para o menu
+                ConfigurarCorrida(); // V√° novamente para o menu
             }
 
             // Thread que mostra o progresso da corrida
             Thread placar = new Thread(AtualizarPlacarThread);
             placar.Start();
+            placar.Join();
 
-            // Inicialize o array de resultados da detecÁ„o de colis„o
+            // Inicialize o array de resultados da detec√ß√£o de colis√£o
             resultados = new bool[carros.Length];
 
             // Inicialize o array de Ids de quem sofreu a batida
             batidos = new char[carros.Length];
 
-            // Crie um array para armazenar as threads de colis„o
-            Thread[] threadsColisao = new Thread[3 * (carros.Length / 6)];
+            // Crie um array para armazenar as threads de colis√£o
+            Thread[] threadsColisao = new Thread[quantThreadsCM];
 
-            /* LÛgica da otimizaÁ„o: Focar a colis„o entre os carros mais prÛximos, ou seja
-             aqueles que tem valores similares no eixo Y (a partir da reorganizaÁ„o do
+            // Crie um array para armazenar as threads de movimenta√ß√£o
+            Thread[] threadsMover = new Thread[quantThreadsCM];
+
+            /* L√≥gica da otimiza√ß√£o (Colis√£o): Focar a colis√£o entre os carros mais pr√≥ximos, ou seja
+             aqueles que tem valores similares no eixo Y (a partir da reorganiza√ß√£o do
             placar conseguimos fazer isso) */
 
-            // 6 carros == 3 Threads (2 carros em cada Thread, verificando se est„o colidindo entre si)
-            // 12 carros == 6 Threads (2 carros em cada Thread, verificando se est„o colidindo entre si)
-            // 18 carros == 9 Threads (2 carros em cada Thread, verificando se est„o colidindo entre si)
-            // 24 carros == 12 Threads (2 carros em cada Thread, verificando se est„o colidindo entre si)
+            // 6 carros == 3 Threads (2 carros em cada Thread, verificando se est√£o colidindo entre si)
+            // 12 carros == 6 Threads (2 carros em cada Thread, verificando se est√£o colidindo entre si)
+            // 18 carros == 9 Threads (2 carros em cada Thread, verificando se est√£o colidindo entre si)
+            // 24 carros == 12 Threads (2 carros em cada Thread, verificando se est√£o colidindo entre si)
 
-            // Indice usado na alocaÁ„o dos carros nas Threads
-            int idxCarro = 0;
-
-            // Inicie as threads para verificar colis„o entre os carros
-            for (int i = 0; i < threadsColisao.Length; i++)
-            {
-                threadsColisao[i] = new Thread(() => VerificarColisaoThread(idxCarro, idxCarro + 1));
-                threadsColisao[i].Start();
-
-                idxCarro = i + threadsColisao.Length - 1; // +2 (6 carros), +5 (12 carros), +8 (18 carros), +11 (24 carros)
-            }
-
-            // Crie um array para armazenar as threads de movimentaÁ„o
-            Thread[] threadsMover = new Thread[3 * (carros.Length / 6)];
-
+            /* L√≥gica da otimiza√ß√£o (Movimenta√ß√£o): Movimentar em cada thread 2 carros ao mesmo tempo
             // 6 carros == 3 Threads (2 carros se movendo em cada Thread)
             // 12 carros == 6 Threads (2 carros se movendo em cada Thread)
             // 18 carros == 9 Threads (2 carros se movendo em cada Thread)
-            // 24 carros == 12 Threads (2 carros se movendo em cada Thread)
+            // 24 carros == 12 Threads (2 carros se movendo em cada Thread) */
 
-            idxCarro = 0; // Reinicando o valor do idxCarro para manipular o array threadsMover
+            // Indice usado na aloca√ß√£o dos carros nas Threads
+            int idxCarro = 0;
 
-            // Inicie as threads para movimentar os carros
-            for (int i = 0; i < threadsMover.Length; i++)
+            // Inicie as threads para verificar colis√£o / executar movimento entre os carros
+            for (int i = 0; i < threadsColisao.Length; i++)
             {
-                threadsMover[i] = new Thread(() => MoverCarroThread(carros[idxCarro], carros[idxCarro + 1]));
+                int idx1 = idxCarro;
+                int idx2 = idxCarro + 1;
+
+                threadsColisao[i] = new Thread(() => VerificarColisaoThread(idx1, idx2));
+                threadsColisao[i].Start();
+
+                threadsMover[i] = new Thread(() => MoverCarroThread(carros[idx1], carros[idx2]));
                 threadsMover[i].Start();
-                idxCarro = i + threadsMover.Length - 1; // +2 (6 carros), +5 (12 carros), +8 (18 carros), +11 (24 carros)
+
+                idxCarro += 2;
             }
 
-            // Aguarde a conclus„o de todas as threads de colis„o
+            // Aguarde a conclus√£o das threads
             for (int i = 0; i < threadsColisao.Length; i++)
             {
                 threadsColisao[i].Join();
-            }
-
-            // Aguarde a conclus„o de todas as threads de movimentaÁ„o
-            for (int i = 0; i < threadsMover.Length; i++)
-            {
                 threadsMover[i].Join();
             }
 
             Console.WriteLine("---------------------------------------");
-            // Array que armazena as threads que lidam com os resultados das colisıes
-            Thread[] threadsLidar = new Thread[2 * (carros.Length / 6)];
+            // Array que armazena as threads que lidam com os resultados das colis√µes
+            Thread[] threadsLidar = new Thread[quantThreadsL];
+
             // 6 resultados == 2 Threads
             // 12 resultados == 4 Threads
             // 18 resultados == 6 Threads
             // 24 resultados == 8 Threads
 
-            // Inicie as threads para tratamento das colisıes
+            // Inicie as threads para tratamento das colis√µes
             for (int i = 0; i < threadsLidar.Length; i++)
             {
                 threadsLidar[i] = new Thread(() => LidarColisoesThread(i * 2, i * 2 + 2));
                 threadsLidar[i].Start();
             }
 
-            // Aguarde a conclus„o de todas as threads de tratamento de colis„o
+            // Aguarde a conclus√£o de todas as threads de tratamento de colis√£o
             for (int i = 0; i < threadsLidar.Length; i++)
             {
                 threadsLidar[i].Join();
@@ -184,16 +178,16 @@ public class Jogo
             // Acrescente o tempo atual
             tempoAtual++;
 
-            Thread.Sleep(1000);
-        } while (jogando); // CondiÁ„o do Game Loop
+            Thread.Sleep(1000); // Intervalo entre os frames do gameloop
+        }
     }
 
-    // MÈtodo para ser executado em cada thread
+    // M√©todo para ser executado em cada thread
     private static void VerificarColisaoThread(int indiceC1, int indiceC2)
     {
         if (carros[indiceC2].VerificarColisao(carros[indiceC1]))
         {
-            lock (lockObj) // Sem·foro
+            lock (lockObj) // Sincronizando
             {
                 resultados[indiceC2] = true; // Colidiu
                 batidos[indiceC2] = carros[indiceC1].Id; // Quem sofreu a batida
@@ -202,7 +196,7 @@ public class Jogo
 
         if (carros[indiceC1].VerificarColisao(carros[indiceC2]))
         {
-            lock (lockObj) // Sem·foro
+            lock (lockObj) // Sincronizando
             {
                 resultados[indiceC1] = true; // Colidiu
                 batidos[indiceC1] = carros[indiceC2].Id; // Quem sofreu a batida
@@ -210,7 +204,7 @@ public class Jogo
         }
     }
 
-    // MÈtodo para o usu·rio customizar a corrida atual
+    // M√©todo para o usu√°rio customizar a corrida atual
     private static void ConfigurarCorrida()
     {
         Console.Clear();
@@ -220,21 +214,21 @@ public class Jogo
         Console.WriteLine("|       Parallel Race - MENU          |");
         Console.WriteLine("---------------------------------------");
         Console.WriteLine("Escolha o tipo de corrida:");
-        Console.WriteLine("[1] ConversÌveis (Carros mÈdios, Velocidade mÈdia)");
+        Console.WriteLine("[1] Convers√≠veis (Carros m√©dios, Velocidade m√©dia)");
         Console.WriteLine("[2] Off-Road (Carros Grandes, Velocidade baixa)");
-        Console.WriteLine("[3] FÛrmula 1 (Carros pequenos, Velocidade alta)");
+        Console.WriteLine("[3] F√≥rmula 1 (Carros pequenos, Velocidade alta)");
 
         int opCorrida = int.Parse(Console.ReadLine());
         while (opCorrida < 1 || opCorrida > 3)
         {
-            Console.WriteLine("Selecione uma opÁ„o de corrida v·lida!");
+            Console.WriteLine("Selecione uma op√ß√£o de corrida v√°lida!");
             opCorrida = int.Parse(Console.ReadLine());
         }
         opCorrida -= 1;
-        tituloCorridaAtual = titulos[opCorrida]; // Atribua o tÌtulo da corrida
+        tituloCorridaAtual = titulos[opCorrida]; // Atribua o t√≠tulo da corrida
         larguraPistaAtual = larguraPadrao * larguras[opCorrida]; // Defina a largura da pista com base no tipo de corrida escolhido
 
-        Console.WriteLine("Escolha o n˙mero de pilotos:");
+        Console.WriteLine("Escolha o n√∫mero de pilotos:");
         Console.WriteLine("[1] - 6 pilotos");
         Console.WriteLine("[2] - 12 pilotos");
         Console.WriteLine("[3] - 18 pilotos");
@@ -243,20 +237,22 @@ public class Jogo
         int opQuant = int.Parse(Console.ReadLine());
         while (opQuant < 1 || opQuant > 4)
         {
-            Console.WriteLine("Escolha uma opÁ„o de n˙mero de pilotos v·lida!");
+            Console.WriteLine("Escolha uma op√ß√£o de n√∫mero de pilotos v√°lida!");
             opQuant = int.Parse(Console.ReadLine());
         }
 
         carros = new Carro[6 * opQuant]; // Inicialize o array de carros com base na quantidade escolhida
+        quantThreadsCM = 3 * (carros.Length / 6); // Definindo a quantidade de elementos dos arrays das Threads de colis√£o e movimenta√ß√£o
+        quantThreadsL = 2 * (carros.Length / 6); // Definindo a quantidade de elementos do array das Threads de Lidar com as colis√µes
 
-        // Crie as inst‚ncia de carro com base no tipo de corrida escolhido (Tamanho, velocidade e derrapagem s„o relativos a opÁ„o)
+        // Crie as inst√¢ncia de carro com base no tipo de corrida escolhido (Tamanho, velocidade e derrapagem s√£o relativos a op√ß√£o)
         for (int i = 0; i < carros.Length; i++)
         {
             carros[i] = new Carro(idPilotos[i], 0 + i * larguras[opCorrida], 0, larguras[opCorrida], alturas[opCorrida],
                 velocidades[opCorrida], derrapagens[opCorrida]);
         }
 
-        Console.WriteLine("Escolha o tempo m·ximo da corrida:");
+        Console.WriteLine("Escolha o tempo m√°ximo da corrida:");
         Console.WriteLine("[1] - 1 minuto");
         Console.WriteLine("[2] - 2 minutos");
         Console.WriteLine("[3] - 3 minutos");
@@ -265,14 +261,14 @@ public class Jogo
         int opTemp = int.Parse(Console.ReadLine());
         while (opTemp < 1 || opTemp > 4)
         {
-            Console.WriteLine("Escolha uma opÁ„o de tempo v·lida!");
+            Console.WriteLine("Escolha uma op√ß√£o de tempo v√°lida!");
             opTemp = int.Parse(Console.ReadLine());
         }
 
-        tempoMaximo = 60 * opTemp; // Configure o tempo m·ximo ==> 60sec * quantidade desejada (1 a 4 min)
+        tempoMaximo = 60 * opTemp; // Configure o tempo m√°ximo ==> 60sec * quantidade desejada (1 a 4 min)
     }
 
-    // MÈtodo que organiza o array de carros com base em quem est· na frente (maior valor no eixo Y)
+    // M√©todo que organiza o array de carros com base em quem est√° na frente (maior valor no eixo Y)
     private static void AtualizarPlacarThread()
     {
         Console.WriteLine(".Placar:");
@@ -283,30 +279,30 @@ public class Jogo
         // Mostre na tela o placar
         for (int i = 0; i < carros.Length; i++)
         {
-            if (i < 9) // Caso estiver abaixo do TOP 10 aumente o espaÁamento entre as strings
-                Console.WriteLine("  " + (i + 1) + "∫ - Piloto " + carros[i].Id + "  |   Y: " + carros[i].Y + " , " + "X: " + carros[i].X);
-            else // Caso estiver acima do TOP 10, reduza o espaÁamento entre as strings
-                Console.WriteLine(" " + (i + 1) + "∫ - Piloto " + carros[i].Id + "  |   Y: " + carros[i].Y + " , " + "X: " + carros[i].X);
+            if (i < 9) // Caso estiver abaixo do TOP 10 aumente o espa√ßamento entre as strings
+                Console.WriteLine("  " + (i + 1) + "¬∫ - Piloto " + carros[i].Id + "  |   Y: " + carros[i].Y + " , " + "X: " + carros[i].X);
+            else // Caso estiver acima do TOP 10, reduza o espa√ßamento entre as strings
+                Console.WriteLine(" " + (i + 1) + "¬∫ - Piloto " + carros[i].Id + "  |   Y: " + carros[i].Y + " , " + "X: " + carros[i].X);
         }
     }
 
-    // MÈtodo usado para movimentar dois carros em cada execuÁ„o de Thread
+    // M√©todo usado para movimentar dois carros em cada execu√ß√£o de Thread
     private static void MoverCarroThread(Carro c1, Carro c2)
     {
         c1.Correr();
         c2.Correr();
     }
 
-    // MÈtodo para processar os resultados recebidos pela deteccÁ„o de colis„o
+    // M√©todo para processar os resultados recebidos pela detecc√ß√£o de colis√£o
     private static void LidarColisoesThread(int inicio, int final)
     {
         for (int i = inicio; i < final; i++)
         {
-            if (resultados[i] && !carros[i].JaBateu) // Caso tiver colidido && ainda n„o tiver lidado com a colis„o
+            if (resultados[i] && !carros[i].JaBateu) // Caso tiver colidido && ainda n√£o tiver lidado com a colis√£o
             {
-                carros[i].JaBateu = true; // Registrando que j· bateu nesse frame
+                carros[i].JaBateu = true; // Registrando que j√° bateu nesse frame
                 Console.WriteLine("Piloto " + carros[i].Id + " bateu no Piloto " + batidos[i] + "! Realocando..."); // Mostre quem bateu
-                carros[i].Y -= carros[i].Altura; // Aplique uma puniÁ„o no eixo Y
+                carros[i].Y -= carros[i].Altura; // Aplique uma puni√ß√£o no eixo Y
             }
         }
     }
@@ -328,9 +324,9 @@ public class Carro
 
     public bool JaBateu = false;
 
-    private static Random rand = new Random(); // objeto Random compartilhado entre todas as inst‚ncias da classe Carro
+    private static Random rand = new Random(); // objeto Random compartilhado entre todas as inst√¢ncias da classe Carro
 
-    // MÈtodo Construtor para configurar os atributos do Carro
+    // M√©todo Construtor para configurar os atributos do Carro
     public Carro(char id, int x, int y, int largura, int altura, int velocidade, int derrapagem)
     {
         this.Id = id;
@@ -342,10 +338,10 @@ public class Carro
         this.Derrapagem = derrapagem;
     }
 
-    // MÈtodo que verifica se a inst‚ncia do Carro est· colidindo com outra
+    // M√©todo que verifica se a inst√¢ncia do Carro est√° colidindo com outra
     public bool VerificarColisao(Carro outroCarro)
     {
-        // Alteramos o ponto de origem do Carro para o meio, aonde a hitbox È feita a partir desse centro
+        // Alteramos o ponto de origem do Carro para o meio, aonde a hitbox √© feita a partir desse centro
         if (X < outroCarro.X + outroCarro.Largura / 2 &&
           X + Largura / 2 > outroCarro.X - outroCarro.Largura / 2 &&
           Y < outroCarro.Y + outroCarro.Altura / 2 &&
@@ -353,10 +349,10 @@ public class Carro
         {
             return true; // Colidiu
         }
-        return false; // N„o colidiu
+        return false; // N√£o colidiu
     }
 
-    // MÈtodo que ir· movimentar o Carro nos eixos Y (indo para frente) e X (indo para os lados)
+    // M√©todo que ir√° movimentar o Carro nos eixos Y (indo para frente) e X (indo para os lados)
     public void Correr()
     {
         JaBateu = false; // Resetando para lidar com os resultados do frame atual
@@ -376,7 +372,7 @@ public class Carro
     {
         if (rand.Next(100) < Derrapagem) // Chance de Derrapar no frame atual
         {
-            int dirDerrapagem = 1; // Direita È a direÁ„o padr„o da derrapagem
+            int dirDerrapagem = 1; // Direita √© a dire√ß√£o padr√£o da derrapagem
 
             if (rand.Next(100) < 50) // 50%  de chance de ir para a esquerda
                 dirDerrapagem = -1;
@@ -384,9 +380,9 @@ public class Carro
             X += Velocidade * dirDerrapagem; // Aplicar a derrapagem
 
             if (X <= 0) // Caso ultrapassar o limite lateral esquerdo da pista
-                X = Largura / 2; // Realoque para a posiÁ„o mÌnima no eixo X
+                X = Largura / 2; // Realoque para a posi√ß√£o m√≠nima no eixo X
             else if (X >= Jogo.larguraPistaAtual) // Caso ultrapassar o limite lateral direito da pista
-                X = Jogo.larguraPistaAtual - Largura / 2; // Realoque para a posiÁ„o m·xima no eixo X
+                X = Jogo.larguraPistaAtual - Largura / 2; // Realoque para a posi√ß√£o m√°xima no eixo X
         }
     }
 }
