@@ -1,15 +1,6 @@
 using System;
 using System.Threading;
 
-/* Grupo 404 - SMAUG:
-  Caike Grion dos Santos
-  João Pedro Queiroz de Melo
-  João Vitor dos Reis Domingues
-  Lucas Neves Timar
-  Lucas Proetti Quadros
-  Matheus Santos Duca
-*/
-
 #region Classe Main
 // Classe principal que contém o método Main
 public class Program

@@ -1,11 +1,4 @@
-/* Grupo 404 - SMAUG:
-  Caike Grion dos Santos
-  João Pedro Queiroz de Melo
-  João Vitor dos Reis Domingues
-  Lucas Neves Timar
-  Lucas Proetti Quadros
-  Matheus Santos Duca
-  ----------------------
+/* 
   . Paralelismo da Segunda Solução:
   Ambas as Threads rodam o mesmo método, que seleciona e verifica a sobreposição entre os objetos. 
   Porém, aqui distribuimos o processamento entre elas, onde usando a mesma lógica de ter um objeto sendo verificado com   

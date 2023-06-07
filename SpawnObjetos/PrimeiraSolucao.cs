@@ -1,11 +1,4 @@
-/* Grupo 404 - SMAUG:
-  Caike Grion dos Santos
-  João Pedro Queiroz de Melo
-  João Vitor dos Reis Domingues
-  Lucas Neves Timar
-  Lucas Proetti Quadros
-  Matheus Santos Duca
-  -------------------
+/*
   . Paralelismo da Primeira Solução:
   Dividir as ações em 2 Threads: A primeira Thread irá cuidar de selecionar as coordenadas dos objetos
   enquanto a segunda irá verificar a sobreposição entre os objetos selecionados pela primeira.
